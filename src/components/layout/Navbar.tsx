@@ -27,6 +27,7 @@ import { CHAIN_NAMES } from "@/lib/web3-config";
 export function Navbar() {
     const { address, isConnected, chainId } = useAccount();
     const { disconnect } = useDisconnect();
+    const { connector } = useAccount();
     const { connect, connectors, isPending } = useConnect();
     const [showWalletModal, setShowWalletModal] = useState(false);
     const [showAccountMenu, setShowAccountMenu] = useState(false);
@@ -63,10 +64,10 @@ export function Navbar() {
     };
 
     const handleDisconnect = () => {
-        disconnect();
-        setShowAccountMenu(false);
-        toast.info("Wallet disconnected");
-    };
+  disconnect({ connector });
+  setShowAccountMenu(false);
+  toast.info("Wallet disconnected");
+};
 
     const WALLET_OPTIONS = [
         {

@@ -30,7 +30,9 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Web3Provider>
           <Navbar />
-          {children}
+          <main className="pt-16">
+            {children}
+          </main>
           <Toaster />
         </Web3Provider>
       </body>
