@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -22,206 +22,10 @@ import {
     CheckCheck,
     Filter,
     Download,
+    Inbox,
 } from "lucide-react";
 import { toast } from "sonner";
-
-const ALL_TRANSACTIONS = [
-    {
-        id: "1",
-        type: "sent",
-        amount: "250.00",
-        coin: "USDC",
-        address: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
-        time: "2 mins ago",
-        date: "Mar 15, 2026",
-        hash: "0xa1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
-        status: "confirmed",
-        note: "Freelance payment - Logo design",
-        network: "Polygon",
-    },
-    {
-        id: "2",
-        type: "received",
-        amount: "1000.00",
-        coin: "USDT",
-        address: "0x53d284357ec70cE289D6D64134DfAc8E511c8a3D",
-        time: "1 hour ago",
-        date: "Mar 15, 2026",
-        hash: "0xb2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
-        status: "confirmed",
-        note: "Client retainer - March",
-        network: "Ethereum",
-    },
-    {
-        id: "3",
-        type: "sent",
-        amount: "75.50",
-        coin: "DAI",
-        address: "0x4E9ce36E442e55EcD9025B9a6E0D88485d628A67",
-        time: "3 hours ago",
-        date: "Mar 15, 2026",
-        hash: "0xc3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4",
-        status: "confirmed",
-        note: "Split dinner bill",
-        network: "Base",
-    },
-    {
-        id: "4",
-        type: "sent",
-        amount: "500.00",
-        coin: "USDC",
-        address: "0x267be1C1D684F78cb4F6a176C4911b741E4Ffdc0",
-        time: "5 hours ago",
-        date: "Mar 15, 2026",
-        hash: "0xd4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5",
-        status: "confirmed",
-        note: "Rent contribution",
-        network: "Arbitrum",
-    },
-    {
-        id: "5",
-        type: "received",
-        amount: "320.00",
-        coin: "USDC",
-        address: "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed",
-        time: "Yesterday",
-        date: "Mar 14, 2026",
-        hash: "0xe5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6",
-        status: "confirmed",
-        note: "Invoice #1042 payment",
-        network: "Polygon",
-    },
-    {
-        id: "6",
-        type: "sent",
-        amount: "1200.00",
-        coin: "USDT",
-        address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
-        time: "Yesterday",
-        date: "Mar 14, 2026",
-        hash: "0xf6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1",
-        status: "confirmed",
-        note: "Team salary - Developer",
-        network: "Ethereum",
-    },
-    {
-        id: "7",
-        type: "received",
-        amount: "85.00",
-        coin: "DAI",
-        address: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
-        time: "2 days ago",
-        date: "Mar 13, 2026",
-        hash: "0xa1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6b2c3",
-        status: "confirmed",
-        note: "Reimbursement - Travel",
-        network: "Optimism",
-    },
-    {
-        id: "8",
-        type: "sent",
-        amount: "3500.00",
-        coin: "USDC",
-        address: "0x8B3192f5eEBD8579568A2Ed41E6FEB402f93f73F",
-        time: "2 days ago",
-        date: "Mar 13, 2026",
-        hash: "0xb2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6c3d4e5",
-        status: "confirmed",
-        note: "International vendor payment",
-        network: "Arbitrum",
-    },
-    {
-        id: "9",
-        type: "received",
-        amount: "650.00",
-        coin: "USDT",
-        address: "0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2",
-        time: "3 days ago",
-        date: "Mar 12, 2026",
-        hash: "0xc3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6d4e5f6a1",
-        status: "confirmed",
-        note: "Consulting fee",
-        network: "Polygon",
-    },
-    {
-        id: "10",
-        type: "sent",
-        amount: "45.00",
-        coin: "DAI",
-        address: "0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2",
-        time: "4 days ago",
-        date: "Mar 11, 2026",
-        hash: "0xd4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6e5f6a1b2c3",
-        status: "confirmed",
-        note: "Subscription renewal",
-        network: "Base",
-    },
-    {
-        id: "11",
-        type: "received",
-        amount: "2200.00",
-        coin: "USDC",
-        address: "0xBcd1C55633a0c78Ca5F2b4F84B8e26D7Fe9A1234",
-        time: "5 days ago",
-        date: "Mar 10, 2026",
-        hash: "0xe5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6f6a1b2c3d4e5",
-        status: "confirmed",
-        note: "Project milestone payment",
-        network: "Ethereum",
-    },
-    {
-        id: "12",
-        type: "sent",
-        amount: "180.00",
-        coin: "USDT",
-        address: "0xCd2a3d9F938E13cD947eC05ABC7Fe734Df8DD826",
-        time: "1 week ago",
-        date: "Mar 8, 2026",
-        hash: "0xf6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f601",
-        status: "confirmed",
-        note: "Design assets purchase",
-        network: "Polygon",
-    },
-    {
-        id: "13",
-        type: "received",
-        amount: "900.00",
-        coin: "USDC",
-        address: "0xDe0B295669a9FD93d5F28D9Ec85E40f4cb697BAe",
-        time: "1 week ago",
-        date: "Mar 8, 2026",
-        hash: "0xa1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6c3d4",
-        status: "confirmed",
-        note: "Referral bonus",
-        network: "Arbitrum",
-    },
-    {
-        id: "14",
-        type: "sent",
-        amount: "60.00",
-        coin: "DAI",
-        address: "0xEf1c6E67703c7BD7107eed8303Fbe6EC2554BF6B",
-        time: "2 weeks ago",
-        date: "Mar 1, 2026",
-        hash: "0xb2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6d4e5f6",
-        status: "confirmed",
-        note: "Coffee & team lunch",
-        network: "Base",
-    },
-    {
-        id: "15",
-        type: "received",
-        amount: "4500.00",
-        coin: "USDT",
-        address: "0xF7e4BC0A9Fb6E7A3cD4bC1e6A5D0123456789ABC",
-        time: "2 weeks ago",
-        date: "Mar 1, 2026",
-        hash: "0xc3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6e5f6a1b2",
-        status: "confirmed",
-        note: "Annual contract payment",
-        network: "Ethereum",
-    },
-];
+import { getTransactions, type Transaction } from "@/lib/transactions";
 
 const COIN_BADGE: Record<string, string> = {
     USDC: "bg-blue-500/10 text-blue-400 border-blue-500/20",
@@ -241,10 +45,15 @@ export default function HistoryPage() {
     const { isConnected } = useAccount();
     const router = useRouter();
 
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [search, setSearch] = useState("");
     const [filterType, setFilterType] = useState("all");
     const [filterCoin, setFilterCoin] = useState("all");
     const [copiedId, setCopiedId] = useState<string | null>(null);
+
+    useEffect(() => {
+        setTransactions(getTransactions());
+    }, []);
 
     const handleCopy = (hash: string, id: string) => {
         navigator.clipboard.writeText(hash);
@@ -256,7 +65,7 @@ export default function HistoryPage() {
     const handleExport = () => {
         const csv = [
             ["Date", "Type", "Amount", "Coin", "Address", "Note", "Network", "Hash"],
-            ...ALL_TRANSACTIONS.map((tx) => [
+            ...transactions.map((tx) => [
                 tx.date,
                 tx.type,
                 tx.amount,
@@ -279,7 +88,7 @@ export default function HistoryPage() {
         toast.success("Transactions exported as CSV!");
     };
 
-    const filtered = ALL_TRANSACTIONS.filter((tx) => {
+    const filtered = transactions.filter((tx) => {
         const matchType = filterType === "all" || tx.type === filterType;
         const matchCoin = filterCoin === "all" || tx.coin === filterCoin;
         const matchSearch =
@@ -291,7 +100,10 @@ export default function HistoryPage() {
         return matchType && matchCoin && matchSearch;
     });
 
-    const totalVolume = filtered.reduce((acc, tx) => acc + parseFloat(tx.amount), 0);
+    const totalVolume = filtered.reduce(
+        (acc, tx) => acc + parseFloat(tx.amount),
+        0
+    );
 
     if (!isConnected) {
         return (
@@ -300,7 +112,9 @@ export default function HistoryPage() {
                     <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <Wallet className="w-8 h-8 text-white/40" />
                     </div>
-                    <h2 className="text-white text-xl font-bold mb-2">Wallet Not Connected</h2>
+                    <h2 className="text-white text-xl font-bold mb-2">
+                        Wallet Not Connected
+                    </h2>
                     <p className="text-white/40 text-sm mb-6">
                         Connect your wallet to view transaction history
                     </p>
@@ -357,9 +171,15 @@ export default function HistoryPage() {
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-zinc-900 border-white/10 text-white rounded-xl">
-                            <SelectItem value="all" className="focus:bg-white/10 focus:text-white">All Types</SelectItem>
-                            <SelectItem value="sent" className="focus:bg-white/10 focus:text-white">Sent</SelectItem>
-                            <SelectItem value="received" className="focus:bg-white/10 focus:text-white">Received</SelectItem>
+                            <SelectItem value="all" className="focus:bg-white/10 focus:text-white">
+                                All Types
+                            </SelectItem>
+                            <SelectItem value="sent" className="focus:bg-white/10 focus:text-white">
+                                Sent
+                            </SelectItem>
+                            <SelectItem value="received" className="focus:bg-white/10 focus:text-white">
+                                Received
+                            </SelectItem>
                         </SelectContent>
                     </Select>
 
@@ -368,10 +188,18 @@ export default function HistoryPage() {
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-zinc-900 border-white/10 text-white rounded-xl">
-                            <SelectItem value="all" className="focus:bg-white/10 focus:text-white">All Coins</SelectItem>
-                            <SelectItem value="USDC" className="focus:bg-white/10 focus:text-white">USDC</SelectItem>
-                            <SelectItem value="USDT" className="focus:bg-white/10 focus:text-white">USDT</SelectItem>
-                            <SelectItem value="DAI" className="focus:bg-white/10 focus:text-white">DAI</SelectItem>
+                            <SelectItem value="all" className="focus:bg-white/10 focus:text-white">
+                                All Coins
+                            </SelectItem>
+                            <SelectItem value="USDC" className="focus:bg-white/10 focus:text-white">
+                                USDC
+                            </SelectItem>
+                            <SelectItem value="USDT" className="focus:bg-white/10 focus:text-white">
+                                USDT
+                            </SelectItem>
+                            <SelectItem value="DAI" className="focus:bg-white/10 focus:text-white">
+                                DAI
+                            </SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -385,7 +213,9 @@ export default function HistoryPage() {
                     <div className="w-px bg-white/10" />
                     <div>
                         <p className="text-white/40 text-xs">Total Volume</p>
-                        <p className="text-white font-bold">${totalVolume.toLocaleString()}</p>
+                        <p className="text-white font-bold">
+                            ${totalVolume.toLocaleString()}
+                        </p>
                     </div>
                     <div className="w-px bg-white/10" />
                     <div>
@@ -407,9 +237,29 @@ export default function HistoryPage() {
                 <div className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden">
                     {filtered.length === 0 ? (
                         <div className="text-center py-16">
-                            <Search className="w-10 h-10 text-white/20 mx-auto mb-3" />
-                            <p className="text-white/40">No transactions found</p>
-                            <p className="text-white/20 text-sm mt-1">Try adjusting your filters</p>
+                            {transactions.length === 0 ? (
+                                <>
+                                    <Inbox className="w-10 h-10 text-white/20 mx-auto mb-3" />
+                                    <p className="text-white/40">No transactions yet</p>
+                                    <p className="text-white/20 text-sm mt-1 mb-4">
+                                        Send your first payment to see it here
+                                    </p>
+                                    <Button
+                                        onClick={() => router.push("/send")}
+                                        className="bg-emerald-500 hover:bg-emerald-400 text-black font-semibold rounded-xl"
+                                    >
+                                        Send Payment
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <Search className="w-10 h-10 text-white/20 mx-auto mb-3" />
+                                    <p className="text-white/40">No transactions match your filters</p>
+                                    <p className="text-white/20 text-sm mt-1">
+                                        Try adjusting your search
+                                    </p>
+                                </>
+                            )}
                         </div>
                     ) : (
                         filtered.map((tx, i) => (
@@ -438,12 +288,14 @@ export default function HistoryPage() {
                                                 {tx.type}
                                             </p>
                                             <span
-                                                className={`text-xs px-2 py-0.5 rounded-full border ${COIN_BADGE[tx.coin]}`}
+                                                className={`text-xs px-2 py-0.5 rounded-full border ${COIN_BADGE[tx.coin] ?? "bg-white/5 text-white/40 border-white/10"
+                                                    }`}
                                             >
                                                 {tx.coin}
                                             </span>
                                             <span
-                                                className={`text-xs px-2 py-0.5 rounded-full border ${NETWORK_BADGE[tx.network]}`}
+                                                className={`text-xs px-2 py-0.5 rounded-full border ${NETWORK_BADGE[tx.network] ?? "bg-white/5 text-white/40 border-white/10"
+                                                    }`}
                                             >
                                                 {tx.network}
                                             </span>

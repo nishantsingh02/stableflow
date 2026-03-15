@@ -30,6 +30,12 @@ import {
 } from "@/lib/web3-config";
 import { useRouter } from "next/navigation";
 
+import {
+  saveTransaction,
+  generateTxId,
+  formatTxDate,
+} from "@/lib/transactions";
+
 const ERC20_ABI = [
     {
         name: "transfer",
@@ -91,10 +97,25 @@ export default function SendPage() {
             });
 
             setTxHash(hash);
-            setTxStatus("success");
-            toast.success("Payment sent!", {
-                description: `${amount} ${selectedCoin} sent successfully`,
-            });
+setTxStatus("success");
+const { date, time } = formatTxDate();
+saveTransaction({
+  id: generateTxId(),
+  type: "sent",
+  amount,
+  coin: selectedCoin,
+  address: recipient,
+  note,
+  network: chainName,
+  hash,
+  date,
+  time,
+  status: "confirmed",
+});
+
+toast.success("Payment sent!", {
+  description: `${amount} ${selectedCoin} sent successfully`,
+});
         } catch (err: any) {
             setTxStatus("error");
             toast.error("Transaction failed", {

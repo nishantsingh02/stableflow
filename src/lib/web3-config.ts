@@ -2,7 +2,7 @@ import { http, createConfig } from "wagmi";
 import { mainnet, polygon, arbitrum, base, optimism } from "wagmi/chains";
 import { injected, metaMask, coinbaseWallet, walletConnect } from "wagmi/connectors";
 
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo-project-id";
+const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";
 
 export const config = createConfig({
   chains: [mainnet, polygon, arbitrum, base, optimism],

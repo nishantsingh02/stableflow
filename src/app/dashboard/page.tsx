@@ -1,6 +1,6 @@
 "use client";
 
-import { useAccount, useChainId, useBalance } from "wagmi";
+import { useAccount, useChainId, useBalance, useReadContract } from "wagmi";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,17 +8,14 @@ import {
   ArrowDownLeft,
   Wallet,
   Send,
-  Globe,
-  TrendingUp,
+  Zap,
   Copy,
   CheckCheck,
-  ExternalLink,
-  Zap,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { CHAIN_NAMES, SUPPORTED_STABLECOINS } from "@/lib/web3-config";
-import { useReadContract } from "wagmi";
+import { getTransactions, type Transaction } from "@/lib/transactions";
 
 const ERC20_BALANCE_ABI = [
   {
@@ -30,59 +27,31 @@ const ERC20_BALANCE_ABI = [
   },
 ] as const;
 
-// demo transections
-const MOCK_TRANSACTIONS = [
-  {
-    id: "1",
-    type: "sent",
-    amount: "250.00",
-    coin: "USDC",
-    address: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
-    time: "2 mins ago",
-    hash: "0xabc123",
-    status: "confirmed",
+const COIN_COLORS: Record<string, { text: string; bg: string; border: string }> = {
+  USDC: {
+    text: "text-blue-400",
+    bg: "bg-blue-500/10",
+    border: "border-blue-500/20",
   },
-  {
-    id: "2",
-    type: "received",
-    amount: "1000.00",
-    coin: "USDT",
-    address: "0x53d284357ec70cE289D6D64134DfAc8E511c8a3D",
-    time: "1 hour ago",
-    hash: "0xdef456",
-    status: "confirmed",
+  USDT: {
+    text: "text-emerald-400",
+    bg: "bg-emerald-500/10",
+    border: "border-emerald-500/20",
   },
-  {
-    id: "3",
-    type: "sent",
-    amount: "75.50",
-    coin: "DAI",
-    address: "0x4E9ce36E442e55EcD9025B9a6E0D88485d628A67",
-    time: "3 hours ago",
-    hash: "0xghi789",
-    status: "confirmed",
+  DAI: {
+    text: "text-yellow-400",
+    bg: "bg-yellow-500/10",
+    border: "border-yellow-500/20",
   },
-  {
-    id: "4",
-    type: "sent",
-    amount: "500.00",
-    coin: "USDC",
-    address: "0x267be1C1D684F78cb4F6a176C4911b741E4Ffdc0",
-    time: "Yesterday",
-    hash: "0xjkl012",
-    status: "confirmed",
-  },
-  {
-    id: "5",
-    type: "received",
-    amount: "320.00",
-    coin: "USDC",
-    address: "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed",
-    time: "2 days ago",
-    hash: "0xmno345",
-    status: "confirmed",
-  },
-];
+};
+
+const NETWORK_BADGE: Record<string, string> = {
+  Ethereum: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  Polygon: "bg-violet-500/10 text-violet-400 border-violet-500/20",
+  Arbitrum: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  Base: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
+  Optimism: "bg-red-500/10 text-red-400 border-red-500/20",
+};
 
 function TokenBalanceCard({
   symbol,
@@ -107,24 +76,6 @@ function TokenBalanceCard({
   const formatted = balance
     ? (Number(balance) / 10 ** decimals).toFixed(2)
     : "0.00";
-
-  const COIN_COLORS: Record<string, { text: string; bg: string; border: string }> = {
-    USDC: {
-      text: "text-blue-400",
-      bg: "bg-blue-500/10",
-      border: "border-blue-500/20",
-    },
-    USDT: {
-      text: "text-emerald-400",
-      bg: "bg-emerald-500/10",
-      border: "border-emerald-500/20",
-    },
-    DAI: {
-      text: "text-yellow-400",
-      bg: "bg-yellow-500/10",
-      border: "border-yellow-500/20",
-    },
-  };
 
   const colors = COIN_COLORS[symbol] ?? {
     text: "text-white",
@@ -153,14 +104,26 @@ export default function DashboardPage() {
   const chainId = useChainId();
   const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   const { data: nativeBalance } = useBalance({ address });
-
   const chainName = CHAIN_NAMES[chainId] ?? "Unknown";
 
   const shortAddress = address
     ? `${address.slice(0, 8)}...${address.slice(-6)}`
     : "";
+
+  useEffect(() => {
+    setTransactions(getTransactions());
+  }, []);
+
+  const totalSent = transactions
+    .filter((t) => t.type === "sent")
+    .reduce((acc, t) => acc + parseFloat(t.amount), 0);
+
+  const totalReceived = transactions
+    .filter((t) => t.type === "received")
+    .reduce((acc, t) => acc + parseFloat(t.amount), 0);
 
   const handleCopy = () => {
     if (!address) return;
@@ -169,15 +132,6 @@ export default function DashboardPage() {
     toast.success("Address copied!");
     setTimeout(() => setCopied(false), 2000);
   };
-
-  const totalSent = MOCK_TRANSACTIONS.filter((t) => t.type === "sent").reduce(
-    (acc, t) => acc + parseFloat(t.amount),
-    0
-  );
-
-  const totalReceived = MOCK_TRANSACTIONS.filter(
-    (t) => t.type === "received"
-  ).reduce((acc, t) => acc + parseFloat(t.amount), 0);
 
   if (!isConnected) {
     return (
@@ -210,6 +164,7 @@ export default function DashboardPage() {
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
 
       <div className="relative max-w-5xl mx-auto">
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
@@ -306,7 +261,7 @@ export default function DashboardPage() {
               </span>
             </div>
             <p className="text-white text-2xl font-black font-mono">
-              {MOCK_TRANSACTIONS.length}
+              {transactions.length}
             </p>
             <p className="text-white/30 text-xs mt-1">All time</p>
           </div>
@@ -351,52 +306,80 @@ export default function DashboardPage() {
           </div>
 
           <div className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden">
-            {MOCK_TRANSACTIONS.map((tx, i) => (
-              <div
-                key={tx.id}
-                className={`flex items-center justify-between p-4 hover:bg-white/[0.02] transition-colors ${
-                  i !== MOCK_TRANSACTIONS.length - 1
-                    ? "border-b border-white/5"
-                    : ""
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-                      tx.type === "sent"
-                        ? "bg-red-500/10 border border-red-500/20"
-                        : "bg-emerald-500/10 border border-emerald-500/20"
-                    }`}
-                  >
-                    {tx.type === "sent" ? (
-                      <ArrowUpRight className="w-4 h-4 text-red-400" />
-                    ) : (
-                      <ArrowDownLeft className="w-4 h-4 text-emerald-400" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-white text-sm font-medium capitalize">
-                      {tx.type}
-                    </p>
-                    <p className="text-white/30 text-xs font-mono">
-                      {tx.address.slice(0, 8)}...{tx.address.slice(-6)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <p
-                    className={`text-sm font-bold font-mono ${
-                      tx.type === "sent" ? "text-red-400" : "text-emerald-400"
-                    }`}
-                  >
-                    {tx.type === "sent" ? "-" : "+"}
-                    {tx.amount} {tx.coin}
-                  </p>
-                  <p className="text-white/30 text-xs">{tx.time}</p>
-                </div>
+            {transactions.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="text-white/30 text-sm mb-3">No transactions yet</p>
+                <Button
+                  onClick={() => router.push("/send")}
+                  className="bg-emerald-500 hover:bg-emerald-400 text-black font-semibold rounded-xl text-sm h-9"
+                >
+                  <Send className="w-3.5 h-3.5 mr-2" />
+                  Send First Payment
+                </Button>
               </div>
-            ))}
+            ) : (
+              transactions.slice(0, 5).map((tx, i) => (
+                <div
+                  key={tx.id}
+                  className={`flex items-center justify-between p-4 hover:bg-white/[0.02] transition-colors ${
+                    i !== Math.min(transactions.length, 5) - 1
+                      ? "border-b border-white/5"
+                      : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                        tx.type === "sent"
+                          ? "bg-red-500/10 border border-red-500/20"
+                          : "bg-emerald-500/10 border border-emerald-500/20"
+                      }`}
+                    >
+                      {tx.type === "sent" ? (
+                        <ArrowUpRight className="w-4 h-4 text-red-400" />
+                      ) : (
+                        <ArrowDownLeft className="w-4 h-4 text-emerald-400" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-white text-sm font-medium capitalize">
+                          {tx.type}
+                        </p>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full border ${
+                            NETWORK_BADGE[tx.network] ??
+                            "bg-white/5 text-white/40 border-white/10"
+                          }`}
+                        >
+                          {tx.network}
+                        </span>
+                      </div>
+                      <p className="text-white/30 text-xs font-mono">
+                        {tx.address.slice(0, 8)}...{tx.address.slice(-6)}
+                      </p>
+                      {tx.note && (
+                        <p className="text-white/20 text-xs italic mt-0.5">
+                          {tx.note}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <p
+                      className={`text-sm font-bold font-mono ${
+                        tx.type === "sent" ? "text-red-400" : "text-emerald-400"
+                      }`}
+                    >
+                      {tx.type === "sent" ? "-" : "+"}
+                      {tx.amount} {tx.coin}
+                    </p>
+                    <p className="text-white/30 text-xs">{tx.time}</p>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
